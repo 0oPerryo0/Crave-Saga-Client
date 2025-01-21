@@ -244,24 +244,6 @@ const msgpack = anyNW.global.msgpack;
 
   trySwitchFrame();
 }
-
-// Updated wrapper page processing
-function processWrapperPage() {
-  // Clean up DOM first
-  cleanupDOM();
-  
-  function trySanitizeFrame() {
-    const frame = document.querySelector('#game-iframe, iframe[role="application"]');
-    if (frame) {
-      frame.style.cssText = 'position: absolute !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; border: none !important; margin: 0 !important; padding: 0 !important;';
-      console.log('[CSC] Wrapper page sanitized.');
-    } else {
-      setTimeout(trySanitizeFrame, 50);
-    }
-  }
-
-  trySanitizeFrame();
-}
   //=============================
   // Render Control
   //=============================
