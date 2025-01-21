@@ -283,11 +283,11 @@
       function dmm() {
         nw.global.provider = 'Crave Saga (DMM)';
         nw.global.loginRegex = /service\/login/;
-        nw.global.pageRegex = /play\/cravesaga/;
+        nw.global.pageRegex = /(play|game)\/cravesaga/; // Updated to handle both old and new paths 21/1/2025
         nw.global.wrapperRegex = [/osapi\.dmm\.com/];
-        nw.global.gameRegex = [/https:\/\/gg-client-w\.crave-saga\.net/];
+        nw.global.gameRegex = [/https:\/\/gg-client-w\.crave-saga\.net/]; 
         nw.global.cookieHosts = ['www.dmm.com', 'dmm.com'];
-        nw.global.entryUrl = 'https://pc-play.games.dmm.com/play/cravesaga/';
+        nw.global.entryUrl = 'https://play.games.dmm.com/game/cravesaga/';
         nw.global.langs = null;
         localStorage.setItem('defaultProvider', 'dmm');
         localStorage.removeItem('success');
@@ -297,11 +297,11 @@
       function fanza() {
         nw.global.provider = 'Crave Saga X (FANZA GAMES)';
         nw.global.loginRegex = /service\/login/;
-        nw.global.pageRegex = /play\/cravesagax/;
+        nw.global.pageRegex = /(play|game)\/cravesagax/; // Updated to handle both old and new paths 21/1/2025
         nw.global.wrapperRegex = [/osapi\.dmm\.com/];
         nw.global.gameRegex = [/https:\/\/gg-client-r\.crave-saga\.net/];
         nw.global.cookieHosts = ['www.dmm.co.jp', 'dmm.co.jp'];
-        nw.global.entryUrl = 'https://pc-play.games.dmm.co.jp/play/cravesagax/';
+        nw.global.entryUrl = 'https://play.games.dmm.co.jp/game/cravesagax';
         nw.global.langs = null;
         localStorage.setItem('defaultProvider', 'fanza');
         localStorage.removeItem('success');
