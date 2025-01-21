@@ -153,52 +153,115 @@ const msgpack = anyNW.global.msgpack;
   }
 
   //=============================
-  // WebGL Page
+  // Login Page
   //=============================
-  function processWebGLPage() {
-    // find a iframe element and directly switch to it, effectively strip the outer frame
+  function processLoginPage() {
+    chrome.privacy.services.passwordSavingEnabled.get({}, function (details) {
+      if (details.levelOfControl === 'controllable_by_this_extension') {
+        chrome.privacy.services.passwordSavingEnabled.set({ value: false }, function () {
+          if (chrome.runtime.lastError === undefined) console.log('Disabled password manager');
+          else console.log(chrome.runtime.lastError);
+        });
+      }
+    });
+  }
 
-    function checkFrame(iframe) {
-      if (!anyNW?.global?.provider) return;
-
-      const url = iframe.src;
-      return checkRegex(url, anyNW.global.wrapperRegex) || checkRegex(url, anyNW.global.gameRegex);
-    }
-
-    function checkFrameAndSwitch(iframe) {
-      if (checkFrame(iframe)) {
-        window.stop();
-        window.document.write(`<body style="background-color: #000;"></body>`);
-        window.location.href = iframe.src;
+  //=============================
+  // Cleanup Game Webpage (DMM and FANZA only)
+  //=============================
+  // Function to clean up the DOM and prepare for frame
+  function cleanupDOM() {
+    if(anyNW.global.provider === 'Crave Saga (DMM)' || anyNW.global.provider === 'Crave Saga X (FANZA GAMES)'){
+      // Force black background on all root elements
+      document.documentElement.style.cssText = 'background-color: #000 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important;';
+      document.body.style.cssText = 'background-color: #000 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important;';
+  
+      // Remove all existing content
+      const root = document.getElementById('root');
+      if (root) {
+        root.innerHTML = '';
+        root.style.cssText = 'background-color: #000 !important; margin: 0 !important; padding: 0 !important;';
       }
     }
+    else return;
+  }
 
-    let time = Date.now();
+  //=============================
+  // WebGL Page
+  //=============================
+  // Updated WebGL page processing
+  function processWebGLPage() {
+  // Find game frame with updated selectors
+  const iframe = document.querySelector('#game_frame, iframe[role="application"]');
+  
+  function checkFrame(iframe) {
+    if (!anyNW?.global?.provider) return false;
+    const url = iframe.src;
+    return checkRegex(url, anyNW.global.wrapperRegex) || checkRegex(url, anyNW.global.gameRegex);
+  }
 
-    function trySwitchFrame() {
-      const iframes = document.querySelectorAll('iframe');
-      for (const iframe of iframes) {
-        if (iframe) {
-          iframe.onload = () => {
-            checkFrameAndSwitch(iframe);
-          };
+  function checkFrameAndSwitch(iframe) {
+    if (checkFrame(iframe)) {
+      // Stop any current page loading/processing
+      window.stop();
+      
+      // Clean up DOM first for DMM and FANZA
+      cleanupDOM();
+      
+      // Force black background one more time
+      document.documentElement.style.backgroundColor = '#000';
+      document.body.style.backgroundColor = '#000';
+      
+      // Redirect to game frame URL
+      window.location.href = iframe.src;
+    }
+  }
 
-          // @ts-ignore
+  let time = Date.now();
+
+  function trySwitchFrame() {
+    const iframes = document.querySelectorAll('#game_frame, iframe[role="application"]');
+    for (const iframe of iframes) {
+      if (iframe) {
+        iframe.onload = () => {
+          checkFrameAndSwitch(iframe);
+        };
+
+        try {
           var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
           if (iframeDoc.readyState == 'complete') {
             checkFrameAndSwitch(iframe);
           }
+        } catch (e) {
+          // Handle cross-origin restrictions silently
         }
       }
+    }
 
-      // try for 5 seconds then give up
-      if (Date.now() - time > 5000) return;
-      console.log('Trying to switch frame');
+    if (Date.now() - time > 5000) return;
       requestAnimationFrame(trySwitchFrame);
     }
 
-    trySwitchFrame();
+  trySwitchFrame();
+}
+
+// Updated wrapper page processing
+function processWrapperPage() {
+  // Clean up DOM first
+  cleanupDOM();
+  
+  function trySanitizeFrame() {
+    const frame = document.querySelector('#game-iframe, iframe[role="application"]');
+    if (frame) {
+      frame.style.cssText = 'position: absolute !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; border: none !important; margin: 0 !important; padding: 0 !important;';
+      console.log('[CSC] Wrapper page sanitized.');
+    } else {
+      setTimeout(trySanitizeFrame, 50);
+    }
   }
+
+  trySanitizeFrame();
+}
   //=============================
   // Render Control
   //=============================
