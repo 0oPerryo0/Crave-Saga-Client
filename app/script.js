@@ -171,7 +171,7 @@ const msgpack = anyNW.global.msgpack;
   //=============================
   // Function to clean up the DOM and prepare for frame
   function cleanupDOM() {
-    if(anyNW.global.provider === 'Crave Saga (DMM)' || anyNW.global.provider === 'Crave Saga X (FANZA GAMES)'){
+    if(anyNW.global.provider == 'Crave Saga (DMM)' || anyNW.global.provider == 'Crave Saga X (FANZA GAMES)'){
       // Force black background on all root elements
       document.documentElement.style.cssText = 'background-color: #000 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important;';
       document.body.style.cssText = 'background-color: #000 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important;';
@@ -208,9 +208,7 @@ const msgpack = anyNW.global.msgpack;
       // Clean up DOM first for DMM and FANZA
       cleanupDOM();
       
-      // Force black background one more time
-      document.documentElement.style.backgroundColor = '#000';
-      document.body.style.backgroundColor = '#000';
+      window.document.write(`<body style="background-color: #000;"></body>`);
       
       // Redirect to game frame URL
       window.location.href = iframe.src;
@@ -318,7 +316,7 @@ const msgpack = anyNW.global.msgpack;
     // Create game canvas context early to force enable preserveDrawingBuffer
     // This allows both ambient background and screenshot to work
     if (gameCanvas) {
-      renderGl = gameCanvas.getContext('webgl', {
+        renderGl = gameCanvas.getContext('webgl', {
         alpha: true,
         antialias: false,
         depth: true,
@@ -1236,12 +1234,58 @@ const msgpack = anyNW.global.msgpack;
     fps5Item.click = toggleFramerate(fps5Item, 5);
 
     const screenshot = () => {
-      if (gameCanvas)
-        gameCanvas.toBlob(function (blob) {
-          if (!blob) return;
-          const item = new ClipboardItem({ 'image/png': blob });
-          navigator.clipboard.write([item]);
-        });
+      if (gameCanvas) {
+        console.log('[CSC] Attempting screenshot...');
+        try {
+          const contextAttributes = renderGl?.getContextAttributes();
+          console.log('[CSC] Canvas context attributes:', contextAttributes);
+          if (contextAttributes && !contextAttributes.preserveDrawingBuffer) {
+            console.warn('[CSC] preserveDrawingBuffer is false!');
+          }
+          gameCanvas.toBlob(function (blob) {
+            if (!blob) {
+              console.error('[CSC] Screenshot failed: toBlob returned null or undefined.');
+              alert('Screenshot failed. The canvas buffer might be empty or invalid.');
+              return;
+            }
+            console.log('[CSC] Screenshot blob created, size:', blob.size);
+
+            // Convert blob to base64 for NW.js Clipboard API
+            const reader = new FileReader();
+            reader.onloadend = function() {
+              try {
+                // Ensure reader.result is a string (Data URI)
+                if (typeof reader.result !== 'string') {
+                  console.error('[CSC] FileReader result is not a string:', typeof reader.result);
+                  alert('Screenshot failed: Could not read image data correctly.');
+                  return;
+                }
+
+                // Use NW.js Clipboard API with the full Data URI and correct type
+                anyNW.Clipboard.get().set(reader.result, 'png'); // Use 'png' type
+                console.log('[CSC] Screenshot copied to clipboard via NW.js API.');
+                // Optional: Notify user of success
+                // notify('noti:screenshot', { message: 'Screenshot copied to clipboard!' });
+              } catch (err) {
+                console.error('[CSC] Failed to copy screenshot using NW.js API:', err);
+                alert(`Screenshot failed to copy using NW.js API: ${err.message}`);
+              }
+            }
+            reader.onerror = function(err) {
+              console.error('[CSC] FileReader error reading blob:', err);
+              alert('Screenshot failed: Error reading image data.');
+            }
+            reader.readAsDataURL(blob);
+
+          }, 'image/png');
+        } catch (e) {
+          console.error('[CSC] Error during screenshot process:', e);
+          alert(`Screenshot failed with error: ${e.message}`);
+        }
+      } else {
+        console.error('[CSC] Screenshot failed: gameCanvas not found.');
+        alert('Screenshot failed: Game canvas element not found.');
+      }
     };
     screenshotItem.click = screenshot;
 
